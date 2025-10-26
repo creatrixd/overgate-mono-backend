@@ -1,0 +1,63 @@
+services:
+  laravel:
+    build:
+      context: ./admin-panel
+      dockerfile: Dockerfile
+    container_name: laravel-app
+    working_dir: /var/www
+    volumes:
+      - ./admin-panel:/var/www
+      - ./laravel/storage:/var/www/storage
+    ports:
+      - "9000:9000"
+    depends_on:
+      - mysql
+      - redis
+    networks:
+      - internal_network  
+
+  mysql:
+    image: mysql/mysql-server:8.0
+    environment:
+      MYSQL_ROOT_PASSWORD: rootpass
+      MYSQL_DATABASE: laravel
+      MYSQL_USER: sail
+      MYSQL_PASSWORD: password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - internal_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: redis-cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - internal_network
+
+  fastapi:
+    build:
+      context: ./ml-streaming-backend
+      dockerfile: Dockerfile
+    container_name: ml-streaming-backend
+    volumes:
+      - ./ml-streaming-backend:/app
+    ports:
+      - "8000:8000"
+    networks:
+      - internal_network
+    depends_on:
+      - redis
+
+volumes:
+  mysql_data:
+  redis_data:
+
+networks:
+  internal_network:
+    driver: bridge
